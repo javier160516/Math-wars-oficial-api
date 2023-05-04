@@ -10,28 +10,28 @@ const getProblemas = async (req, res) => {
     // const imagenes = await Imagenes.findAll();
     // const respuestas = await Respuestas.findAll();
 
-    const problemas = await db.query(
-      `
-            SELECT p.id, p.planteamiento, p.opciones, r.opcion, c.nombre
-            FROM problemas as p
-            INNER JOIN respuestas as r ON r.id_problema = p.id
-            INNER JOIN categorias as c ON c.id = p.id
-        `,
-      { type: QueryTypes.SELECT }
-    );
-    // const problemas = await 
+    // const problemas = await db.query(
+    //   `
+    //         SELECT p.id, p.planteamiento, p.opciones, r.opcion, c.nombre
+    //         FROM problemas as p
+    //         INNER JOIN respuestas as r ON r.id_problema = p.id
+    //         INNER JOIN categorias as c ON c.id = p.id
+    //     `,
+    //   { type: QueryTypes.SELECT }
+    // );
+    const problemas = await Problema.findAll({include: [{model: Respuestas}, {model: Categorias}]}); 
 
     const newArrayProblemas = [];
-    Object.values(problemas).forEach((problema) => {
-      const problemaObjeto = {
-        id: problema.id,
-        planteamiento: problema.planteamiento,
-        respuestas: problema.opciones,
-        categoria: problema.nombre,
-        opcion: problema.opcion,
-      };
-      newArrayProblemas.push(problemaObjeto);
-    });
+    // Object.values(problemas).forEach((problema) => {
+    //   const problemaObjeto = {
+    //     id: problema.id,
+    //     planteamiento: problema.planteamiento,
+    //     respuestas: problema.opciones,
+    //     categoria: problema.nombre,
+    //     opcion: problema.opcion,
+    //   };
+    //   newArrayProblemas.push(problemaObjeto);
+    // });
 
     return res.status(200).json({
       status: 200,
@@ -92,6 +92,7 @@ const registrarPregunta = async (req, res) => {
   }
 
   const { problem, answers, correct: correctAnswer, id_categoria } = req.body;
+  console.log(req.body);
 
   try {
     const correct = await Respuestas.create({
