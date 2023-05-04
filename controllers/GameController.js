@@ -19,6 +19,7 @@ const getProblemas = async (req, res) => {
         `,
       { type: QueryTypes.SELECT }
     );
+    // const problemas = await 
 
     const newArrayProblemas = [];
     Object.values(problemas).forEach((problema) => {
@@ -34,7 +35,7 @@ const getProblemas = async (req, res) => {
 
     return res.status(200).json({
       status: 200,
-      data: newArrayProblemas,
+      data: problemas,
     });
   } catch (error) {
     console.log(error);
@@ -93,16 +94,16 @@ const registrarPregunta = async (req, res) => {
   const { problem, answers, correct: correctAnswer, id_categoria } = req.body;
 
   try {
+    const correct = await Respuestas.create({
+      opcion: correctAnswer,
+    });
+    
+    const { id } = correct;
     const problema = await Problema.create({
       planteamiento: problem,
       opciones: JSON.stringify(answers),
+      id_respuestas: id,
       id_categoria: id_categoria,
-    });
-
-    const { id } = problema;
-    const correct = await Respuestas.create({
-      opcion: correctAnswer,
-      id_problema: id,
     });
 
     return res.status(201).json({

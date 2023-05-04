@@ -6,10 +6,10 @@ const Respuestas = db.define('Respuestas', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
-    id_problema: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-    }
+    // id_problema: {
+    //     type: DataTypes.INTEGER,
+    //     allowNull: false,
+    // }
 });
 
 export default Respuestas;

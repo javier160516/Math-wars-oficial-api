@@ -4,7 +4,8 @@ import Respuestas from "./Respuestas.js";
 import Categorias from "./Categorias.js";
 
 Problema.hasMany(Imagenes, {foreignKey: 'id_problema'});
-Problema.hasMany(Respuestas, {foreignKey: 'id_problema'});
+// Problema.hasMany(Respuestas, {foreignKey: 'id_problema'});
+Problema.belongsTo(Respuestas, {foreignKey: 'id_respuestas'});
 Problema.belongsTo(Categorias, {foreignKey: 'id_categoria'})
 
 export {

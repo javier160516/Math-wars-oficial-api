@@ -6,6 +6,10 @@ const Problema = db.define('problemas', {
         type: DataTypes.STRING,
         allowNull: false
     },
+    id_respuestas: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     id_categoria: {
         type: DataTypes.INTEGER,
         allowNull: false,
