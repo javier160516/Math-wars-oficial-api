@@ -1,7 +1,5 @@
 import { validationResult, check } from "express-validator";
 import { Problema, Respuestas, Categorias } from "../models/index.js";
-import db from "../config/db.js";
-import { QueryTypes } from "sequelize";
 
 const getProblemas = async (req, res) => {
   try {
@@ -233,6 +231,45 @@ const deleteCategory = async (req, res) => {
   }
 };
 
+const playingCategory = async (req, res) => {
+  const { id } = req.params;
+
+  const categories = await Categorias.findOne({ where: { id } });
+
+  if (!categories) {
+    return res.status(404).json({
+      status: 404,
+      msg: "La categoría no existe",
+    });
+  }
+
+  const problemas = await Problema.findAll({ where: { id_categoria: id } });
+
+  if (problemas.length < 5) {
+    return res.status(400).json({
+      status: 400,
+      msg: "La categoría debe tener mas de 5 problemas",
+    });
+  }
+
+  if (categories.playing == false) {
+    categories.playing = true;
+  } else {
+    categories.playing = false;
+  }
+  categories.save();
+
+  return res.status(200).json({
+    status: 200,
+    category: categories,
+    msg: "La categoría se ha cambiado correctamente",
+  });
+};
+
+const deletePlayingCategory = async (req, res) => {
+  console.log(req.params);
+};
+
 export {
   getProblemas,
   registrarPregunta,
@@ -240,4 +277,6 @@ export {
   getCategories,
   registerCategory,
   deleteCategory,
+  playingCategory,
+  deletePlayingCategory,
 };
