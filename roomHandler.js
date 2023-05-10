@@ -1,5 +1,6 @@
 // const shortId = require("shortid");
 import shortId from "shortid";
+import { Problema, Respuestas, Categorias } from "./models/index.js";
 
 const roomHandler = (io, socket, rooms) => {
   const create = (payload, callback) => {
@@ -58,7 +59,13 @@ const roomHandler = (io, socket, rooms) => {
     }
   };
 
-  const join = (payload, callback) => {
+  /**
+   * SE MANDA A LLAMAR A LA FUNCION CUANDO LOS 2 JUGADORES YA ESTAN EN LA SALA
+   * @param {*} payload
+   * @param {*} callback
+   * @returns
+   */
+  const join = async (payload, callback) => {
     const index = rooms.findIndex((room) => room.roomId === payload.roomId);
     if (index >= 0) {
       const room = rooms[index];
@@ -70,9 +77,34 @@ const roomHandler = (io, socket, rooms) => {
           optionLock: false,
           score: 0,
         };
+
         room.vacant = false;
         rooms.push(room);
         socket.join(room.roomId);
+
+        const problemas = await Problema.findAll({
+          include: [
+            { model: Respuestas },
+            { model: Categorias, where: { playing: 1 } },
+          ],
+        });
+    
+        const arrayQuestions = []
+        problemas.forEach((question) => {
+          let newQuestion = {
+            id: question.id,
+            planteamiento: question.planteamiento,
+            incisos: question.opciones,
+            respuestaCorrecta: question.Respuesta.opcion,
+            categoria: question.categoria.nombre,
+          };
+          arrayQuestions.push(newQuestion);
+        });
+
+        const random = Math.floor(Math.random() * arrayQuestions.length)
+
+        room.problemas = arrayQuestions[random];
+        
         io.to(room.roomId).emit("room:get", room);
         callback(null, room);
       } else {
@@ -91,9 +123,16 @@ const roomHandler = (io, socket, rooms) => {
     }
   };
 
+  const getProblemas = async () => {
+    
+    return arrayQuestions;
+    // io.to(room.roomId).emit("room:getProblemasClient", { problemas });
+  };
+
   socket.on("room:create", create);
   socket.on("room:join", join);
   socket.on("room:update", update);
+  // socket.on("room:getProblemas", getProblemas);
 };
 
-export default roomHandler
+export default roomHandler;

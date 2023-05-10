@@ -266,10 +266,6 @@ const playingCategory = async (req, res) => {
   });
 };
 
-const deletePlayingCategory = async (req, res) => {
-  console.log(req.params);
-};
-
 export {
   getProblemas,
   registrarPregunta,
@@ -278,5 +274,4 @@ export {
   registerCategory,
   deleteCategory,
   playingCategory,
-  deletePlayingCategory,
 };
