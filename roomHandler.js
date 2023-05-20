@@ -1,6 +1,7 @@
 // const shortId = require("shortid");
 import shortId from "shortid";
 import { Problema, Respuestas, Categorias } from "./models/index.js";
+import { Op } from "sequelize";
 
 const roomHandler = (io, socket, rooms) => {
   const create = (payload, callback) => {
@@ -82,29 +83,8 @@ const roomHandler = (io, socket, rooms) => {
         rooms.push(room);
         socket.join(room.roomId);
 
-        const problemas = await Problema.findAll({
-          include: [
-            { model: Respuestas },
-            { model: Categorias, where: { playing: 1 } },
-          ],
-        });
-    
-        const arrayQuestions = []
-        problemas.forEach((question) => {
-          let newQuestion = {
-            id: question.id,
-            planteamiento: question.planteamiento,
-            incisos: question.opciones,
-            respuestaCorrecta: question.Respuesta.opcion,
-            categoria: question.categoria.nombre,
-          };
-          arrayQuestions.push(newQuestion);
-        });
+        room.problemas = await getProblemas();
 
-        const random = Math.floor(Math.random() * arrayQuestions.length)
-
-        room.problemas = arrayQuestions[random];
-        
         io.to(room.roomId).emit("room:get", room);
         callback(null, room);
       } else {
@@ -123,16 +103,56 @@ const roomHandler = (io, socket, rooms) => {
     }
   };
 
-  const getProblemas = async () => {
+  const getProblemas = async (payload) => {
+    // console.log(payload, " desde payload 106", Date.now().toLocaleString());
+    let problemas;
+    if (payload) {
+      const { problemas: problema } = payload;
+      problemas = await Problema.findAll({
+        include: [
+          { model: Respuestas },
+          { model: Categorias, where: [{ playing: 1 }, {id: {[Op.ne]: problema.id}}]},
+        ],
+      });
+    } else {
+      problemas = await Problema.findAll({
+        include: [
+          { model: Respuestas },
+          { model: Categorias, where: { playing: 1 } },
+        ],
+      });
+    }
+
+    const arrayQuestions = [];
+    problemas.forEach((question) => {
+      let newQuestion = {
+        id: question.id,
+        planteamiento: question.planteamiento,
+        incisos: question.opciones,
+        respuestaCorrecta: question.Respuesta.opcion,
+        categoria: question.categoria.nombre,
+      };
+      arrayQuestions.push(newQuestion);
+    });
+
+    const random = Math.floor(Math.random() * arrayQuestions.length);
     
-    return arrayQuestions;
-    // io.to(room.roomId).emit("room:getProblemasClient", { problemas });
+    if(payload){
+      io.to(payload.roomId).emit("room:setProblema", {...payload, problemas: arrayQuestions[random]});
+    }else{
+      return arrayQuestions[random];
+    }
+
+
+    // console.log('Comunicandose con getProblemas', payload);
+    // // return arrayQuestions;
+    // // io.to(room.roomId).emit("room:getProblemasClient", { problemas });
   };
 
   socket.on("room:create", create);
   socket.on("room:join", join);
   socket.on("room:update", update);
-  // socket.on("room:getProblemas", getProblemas);
+  socket.on("room:getProblema", getProblemas);
 };
 
 export default roomHandler;

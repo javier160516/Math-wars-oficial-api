@@ -21,6 +21,45 @@ const getProblemas = async (req, res) => {
   }
 };
 
+const getProblema = async (req, res) => {
+  const { id: id_problema } = req.params;
+
+  if (isNaN(id_problema)) {
+    return res.status(404).json({
+      status: 404,
+      msg: "Ejercicio no encontrado",
+    });
+  }
+
+  const problema = await Problema.findOne({
+    include: [{ model: Respuestas }, { model: Categorias }],
+    where: { id: id_problema },
+  });
+
+  if (!problema) {
+    return res.status(404).json({
+      status: 404,
+      msg: "Ejercicio no encontrado",
+    });
+  }
+
+  const { id, planteamiento, opciones, Respuesta: {opcion}, categoria: {id: id_categoria, nombre} } = problema;
+
+  const newProblema = {
+    id: id,
+    planteamiento: planteamiento,
+    opciones: opciones,
+    respuestaCorrecta: opcion,
+    categoria: id_categoria,
+    nombre_categoria: nombre,
+  }
+
+  return res.status(200).json({
+    status: 200,
+    problema: newProblema
+  });
+};
+
 const registrarPregunta = async (req, res) => {
   await check("problem")
     .notEmpty()
@@ -96,33 +135,81 @@ const registrarPregunta = async (req, res) => {
   }
 };
 
-// const guardarImagen = async (req, res) => {
-//     console.log(req.params);
-//     const arrayPathFiles = [];
-//     const arrayNameFiles = [];
-//     const arrayMimetypesFiles = [];
+const editarPregunta = async (req, res) => {
+  await check("problem")
+    .notEmpty()
+    .withMessage("El campo es obligatorio")
+    .run(req);
+  await check("answers")
+    .notEmpty()
+    .withMessage("Las respuestas son obligatorias")
+    .run(req);
+  await check("correct")
+    .notEmpty()
+    .withMessage("El campo es obligatorio")
+    .run(req);
+  await check("id_categoria")
+    .notEmpty()
+    .withMessage("La categoría es obligatoria")
+    .run(req);
 
-//     req.files.forEach(file => {
-//         const { path, filename, mimetype } = file;
-//         arrayPathFiles.push(`${path}`);
-//         arrayNameFiles.push(filename);
-//         arrayMimetypesFiles.push(mimetype);
-//     });
+  let result = validationResult(req);
+  let errors = {};
+  result.array().map((resultState) => {
+    const { param, msg } = resultState;
+    if (param == "problem") {
+      errors = { ...errors, problem: msg };
+    }
+    if (param == "answers") {
+      errors = { ...errors, options: msg };
+    }
+    if (param == "correct") {
+      errors = { ...errors, correct: msg };
+    }
+    if (param == "id_categoria") {
+      errors = { ...errors, id_categoria: msg };
+    }
+  });
 
-//     const { id } = req.params;
+  if (!result.isEmpty()) {
+    return res.status(400).json({
+      status: 400,
+      errors: errors,
+    });
+  }
 
-//     const imagenes = await Imagenes.create({
-//         nombre: JSON.stringify(arrayNameFiles),
-//         path: JSON.stringify(arrayPathFiles),
-//         mimetype: JSON.stringify(arrayMimetypesFiles),
-//         id_problema: id
-//     });
+  try {
+    const problema = await Problema.findOne({
+      where: { id: req.params.id },
+    });
 
-//     return res.status(201).json({
-//         status: 201,
-//         msg: 'Pregunta creada correctamente'
-//     });
-// }
+    const respuesta = await Respuestas.findOne({
+      where: {id: problema.id_respuestas}
+    });
+  
+    const {problem, answers, correct,  id_categoria} = req.body;
+    problema.planteamiento = problem;
+    problema.opciones = JSON.stringify(answers);
+    problema.id_categoria = id_categoria;
+    respuesta.opcion = correct;
+  
+    problema.save();
+    respuesta.save();
+  
+    return res.status(200).json({
+      status: 200,
+      msg: 'El problema se modificó correctamente'
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      status: 500,
+      msg: 'Hubo un error',
+      error: error
+    });
+  }
+
+}
 
 const deleteQuestion = async (req, res) => {
   const { id } = req.params;
@@ -268,7 +355,9 @@ const playingCategory = async (req, res) => {
 
 export {
   getProblemas,
+  getProblema,
   registrarPregunta,
+  editarPregunta,
   deleteQuestion,
   getCategories,
   registerCategory,
